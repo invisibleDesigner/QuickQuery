@@ -37,9 +37,10 @@ export function resetShortcuts() {
 }
 
 // Parse shortcut string like "Cmd+Enter" into Monaco keybinding
-export function parseMonacoKeybinding(keys: string): { ctrlCmd: boolean; keyCode: number } | null {
+export function parseMonacoKeybinding(keys: string): { ctrlCmd: boolean; shift: boolean; keyCode: number } | null {
   const parts = keys.split('+').map(p => p.trim());
   const ctrlCmd = parts.some(p => p === 'Cmd' || p === 'Ctrl');
+  const shift = parts.some(p => p === 'Shift');
   const key = parts.find(p => p !== 'Cmd' && p !== 'Ctrl' && p !== 'Shift' && p !== 'Alt');
 
   const keyMap: Record<string, number> = {
@@ -56,7 +57,7 @@ export function parseMonacoKeybinding(keys: string): { ctrlCmd: boolean; keyCode
 
   const keyCode = key ? keyMap[key] : undefined;
   if (keyCode === undefined) return null;
-  return { ctrlCmd, keyCode };
+  return { ctrlCmd, shift, keyCode };
 }
 
 // Format key for display (ensure Cmd on Mac)

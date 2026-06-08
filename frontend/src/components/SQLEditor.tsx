@@ -56,7 +56,7 @@ export default function SQLEditor({
 
     const parsed = parseMonacoKeybinding(getShortcutKeys('execute'));
     if (parsed) {
-      const mod = parsed.ctrlCmd ? monaco.KeyMod.CtrlCmd : 0;
+      const mod = (parsed.ctrlCmd ? monaco.KeyMod.CtrlCmd : 0) | (parsed.shift ? monaco.KeyMod.Shift : 0);
       editor.addCommand(mod | parsed.keyCode, () => {
         executeRef.current();
       });
@@ -160,7 +160,7 @@ export default function SQLEditor({
           // Bind execute shortcut
           const parsed = parseMonacoKeybinding(getShortcutKeys('execute'));
           if (parsed) {
-            const mod = parsed.ctrlCmd ? monaco.KeyMod.CtrlCmd : 0;
+            const mod = (parsed.ctrlCmd ? monaco.KeyMod.CtrlCmd : 0) | (parsed.shift ? monaco.KeyMod.Shift : 0);
             editor.addCommand(mod | parsed.keyCode, () => {
               executeRef.current();
             });

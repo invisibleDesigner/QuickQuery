@@ -28,7 +28,7 @@ function nextTabId() {
 }
 
 function createTab(database = '', sql = 'SELECT 1'): QueryTab {
-  return { id: nextTabId(), name: '查询 1', sql, database, result: null };
+  return { id: nextTabId(), name: `查询 ${tabCounter}`, sql, database, result: null };
 }
 
 interface WorkspaceState {

@@ -2,3 +2,5 @@ bin
 .task
 node_modules
 frontend/dist
+frontend/bindings
+.DS_Store

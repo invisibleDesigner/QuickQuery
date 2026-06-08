@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"quickquery/internal/config"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -98,7 +99,7 @@ func ListColumns(conn config.Connection, database, table string) ([]ColumnInfo, 
 	}
 	defer db.Close()
 
-	rows, err := db.Query("SHOW COLUMNS FROM `" + table + "`")
+	rows, err := db.Query("SHOW COLUMNS FROM `" + strings.ReplaceAll(table, "`", "``") + "`")
 	if err != nil {
 		return nil, err
 	}
