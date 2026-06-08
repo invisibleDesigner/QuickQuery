@@ -430,11 +430,6 @@ html, body, #root {
   border-bottom: 1px solid var(--border);
 }
 
-.hint {
-  font-size: 11px;
-  color: var(--subtle);
-}
-
 .database-selector {
   display: flex;
   align-items: center;
@@ -681,7 +676,7 @@ input[type="number"] {
 }
 
 .test-result.success {
-  background: #1a3a1a;
+  background: var(--active);
   color: #4caf50;
   border: 1px solid #2e5a2e;
 }

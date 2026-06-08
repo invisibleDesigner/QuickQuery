@@ -35,14 +35,11 @@ export default function ConnectionDialog({ open, connection, onSave, onClose, on
   };
 
   const handleTest = async () => {
-    console.log('Testing connection:', form);
     setTestResult('测试中...');
     try {
       const result = await onTest(form);
-      console.log('Test result:', result);
       setTestResult(result);
     } catch (err) {
-      console.error('Test error:', err);
       setTestResult(`错误：${err}`);
     }
   };

@@ -72,10 +72,7 @@ func (a *App) ExecuteQuery(connID string, dbName string, sql string) (result *da
 	if conn == nil {
 		return &database.QueryResult{Error: "未找到连接"}
 	}
-	fmt.Printf("ExecuteQuery conn=%s db=%s sql=%q\n", connID, dbName, sql)
-	result = database.ExecuteQuery(*conn, dbName, sql)
-	fmt.Printf("ExecuteQuery result error=%q columns=%d rows=%d\n", result.Error, len(result.Columns), len(result.Rows))
-	return result
+	return database.ExecuteQuery(*conn, dbName, sql)
 }
 
 func (a *App) GetDatabases(connID string) (dbs []string) {
