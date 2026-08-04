@@ -7,7 +7,7 @@ info:
   description: "轻量级 MySQL 查询工具"
   copyright: "(c) 2026, QuickQuery"
   comments: "QuickQuery"
-  version: "0.1.0"
+  version: "0.2.0"
 
 dev_mode:
   root_path: .
