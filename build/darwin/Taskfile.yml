@@ -135,6 +135,9 @@ tasks:
 
   create:app:bundle:
     summary: Creates an `.app` bundle
+    preconditions:
+      - sh: 'test "$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" build/darwin/Info.plist)" = "$(sed -n "s/^[[:space:]]*version: \"\(.*\)\"/\1/p" build/config.yml)"'
+        msg: "build/darwin/Info.plist CFBundleShortVersionString must match build/config.yml info.version"
     cmds:
       - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS"
       - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/Resources"
