@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Connection } from '../types';
+import { ChevronIcon, ServerIcon, DatabaseIcon, TableIcon, KeyIcon, FieldIcon, PlusIcon, PencilIcon, TrashIcon, PlugIcon } from './icons';
 
 const tableClickDelayMs = 250;
 
@@ -124,7 +125,7 @@ export default function Sidebar({
     <div className="sidebar">
       <div className="sidebar-header">
         <span>连接管理</span>
-        <button className="btn-icon" onClick={onAddConnection} title="新建连接">+</button>
+        <button className="btn-icon" onClick={onAddConnection} title="新建连接" aria-label="新建连接"><PlusIcon size={14} /></button>
       </div>
       <div className="sidebar-tree">
         {connections.map(conn => (
@@ -133,17 +134,19 @@ export default function Sidebar({
               className={`tree-node connection-node ${activeConnectionId === conn.id ? 'active' : ''}`}
               onClick={() => toggleConnection(conn.id)}
             >
-              <span className="tree-icon">{expandedConnections.has(conn.id) ? '▾' : '▸'}</span>
+              <span className={`tree-icon chevron ${expandedConnections.has(conn.id) ? 'open' : ''}`}><ChevronIcon size={12} /></span>
+              <span className="tree-icon kind-connection"><ServerIcon size={13} /></span>
               <span className="tree-label">{conn.name || conn.host}</span>
               <span className="tree-actions">
-                <button className="btn-icon-small" onClick={e => { e.stopPropagation(); onEditConnection(conn); }} title="编辑">✎</button>
-                <button className="btn-icon-small" onClick={e => { e.stopPropagation(); onDeleteConnection(conn.id); }} title="删除">×</button>
+                <button className="btn-icon-small" onClick={e => { e.stopPropagation(); onEditConnection(conn); }} title="编辑" aria-label="编辑连接"><PencilIcon size={11} /></button>
+                <button className="btn-icon-small danger" onClick={e => { e.stopPropagation(); onDeleteConnection(conn.id); }} title="删除" aria-label="删除连接"><TrashIcon size={11} /></button>
               </span>
             </div>
             {activeConnectionId === conn.id && expandedConnections.has(conn.id) && (databases[conn.id] || []).map(db => (
               <div key={db} className="tree-item nested">
                 <div className="tree-node" onClick={() => toggleDb(conn.id, db)}>
-                  <span className="tree-icon">{expandedDbs.has(`${conn.id}/${db}`) ? '▾' : '▸'}</span>
+                  <span className={`tree-icon chevron ${expandedDbs.has(`${conn.id}/${db}`) ? 'open' : ''}`}><ChevronIcon size={12} /></span>
+                  <span className="tree-icon"><DatabaseIcon size={13} /></span>
                   <span className="tree-label">{db}</span>
                 </div>
                 {expandedDbs.has(`${conn.id}/${db}`) && getTables(conn.id, db).map(table => (
@@ -153,13 +156,14 @@ export default function Sidebar({
                       onClick={() => handleTableClick(conn.id, db, table)}
                       onDoubleClick={() => handleTableDoubleClick(conn.id, db, table)}
                     >
-                      <span className="tree-icon">{expandedTables.has(`${conn.id}/${db}/${table}`) ? '▾' : '▸'}</span>
+                      <span className={`tree-icon chevron ${expandedTables.has(`${conn.id}/${db}/${table}`) ? 'open' : ''}`}><ChevronIcon size={12} /></span>
+                      <span className="tree-icon"><TableIcon size={13} /></span>
                       <span className="tree-label">{table}</span>
                     </div>
                     {expandedTables.has(`${conn.id}/${db}/${table}`) && getColumns(conn.id, db, table).map((col: any) => (
                       <div key={col.name} className="tree-item nested">
                         <div className="tree-node column-node">
-                          <span className="tree-icon">{col.key === 'PRI' ? '🔑' : '·'}</span>
+                          <span className={`tree-icon ${col.key === 'PRI' ? 'kind-key' : ''}`}>{col.key === 'PRI' ? <KeyIcon size={12} /> : <FieldIcon size={9} />}</span>
                           <span className="tree-label">{col.name}</span>
                           <span className="tree-type">{col.type}</span>
                         </div>
@@ -173,6 +177,7 @@ export default function Sidebar({
         ))}
         {connections.length === 0 && (
           <div className="empty-state">
+            <div className="empty-illustration"><PlugIcon size={20} /></div>
             <p>暂无连接</p>
             <button className="btn-primary" onClick={onAddConnection}>新建连接</button>
           </div>

@@ -6,6 +6,8 @@ import ConnectionDialog from './components/ConnectionDialog';
 import ShortcutDialog from './components/ShortcutDialog';
 import { Connection, QueryTab } from './types';
 import { parseMonacoKeybinding } from './utils/shortcuts';
+import { getExecutionSql } from './utils/sqlExecution';
+import { KeyboardIcon, CloseIcon, PlusIcon, AlertIcon } from './components/icons';
 import './App.css';
 
 import {
@@ -275,15 +277,17 @@ function App() {
     window.addEventListener('mouseup', handleUp);
   };
 
-  const handleExecute = useCallback(async () => {
+  const handleExecute = useCallback(async (selectedSql?: string) => {
     if (!activeConnectionId) {
       updateTab(activeTabId, { result: { columns: [], rows: [], error: '请先选择连接', duration: 0 } });
       return;
     }
     const tab = tabs.find(t => t.id === activeTabId);
     if (!tab) return;
+
+    const executionSql = getExecutionSql(selectedSql, tab.sql);
     try {
-      const result = await ExecuteQuery(activeConnectionId, tab.database, tab.sql);
+      const result = await ExecuteQuery(activeConnectionId, tab.database, executionSql);
       updateTab(activeTabId, { result });
     } catch (error) {
       updateTab(activeTabId, {
@@ -400,7 +404,8 @@ function App() {
         <div className="toolbar">
           {activeConnection && (
             <span className="connection-badge">
-              🟢 {activeConnection.name || activeConnection.host}
+              <span className="status-dot" />
+              {activeConnection.name || activeConnection.host}
               {activeConnection.database ? ` / ${activeConnection.database}` : ''}
             </span>
           )}
@@ -413,7 +418,9 @@ function App() {
               <option value="dark">暗色</option>
             </select>
           </label>
-          <button className="btn-secondary shortcut-badge" onClick={() => setShowShortcuts(true)} title="快捷键管理">快捷键</button>
+          <button className="btn-secondary shortcut-badge" onClick={() => setShowShortcuts(true)} title="快捷键管理" aria-label="快捷键管理">
+            <KeyboardIcon size={13} />快捷键
+          </button>
         </div>
         <div className="editor-pane" style={{ height: editorHeight }}>
           <div className="tab-bar">
@@ -438,12 +445,12 @@ function App() {
                   <span className="tab-name" onDoubleClick={e => { e.stopPropagation(); setEditingTabId(tab.id); }}>{tab.name}</span>
                 )}
                 {tabs.length > 1 && (
-                  <span className="tab-close" onClick={e => handleCloseTab(tab.id, e)}>×</span>
+                  <button type="button" className="tab-close" aria-label="关闭标签页" title="关闭标签页" onClick={e => handleCloseTab(tab.id, e)}><CloseIcon size={10} strokeWidth={2.2} /></button>
                 )}
                 <span className="tab-resizer" onMouseDown={e => startTabResize(tab.id, e)} />
               </div>
             ))}
-            <button className="tab-add" onClick={handleAddTab} title="新建查询">+</button>
+            <button className="tab-add" onClick={handleAddTab} title="新建查询" aria-label="新建查询"><PlusIcon size={14} /></button>
           </div>
           <SQLEditor
           value={activeTab?.sql || ''}
@@ -455,7 +462,7 @@ function App() {
           onDatabaseChange={v => updateTab(activeTabId, { database: v })}
           onExecute={handleExecute}
           height={`${Math.max(editorHeight - 38 - 32, 100)}px`}
-          editorTheme={effectiveTheme === 'dark' ? 'vs-dark' : 'vs'}
+          editorTheme={effectiveTheme === 'dark' ? 'qq-dark' : 'qq-light'}
           shortcutVersion={shortcutVersion}
           />
         </div>
@@ -472,7 +479,7 @@ function App() {
       {deletingConnection && (
         <div className="dialog-overlay" onClick={e => e.stopPropagation()}>
           <div className="dialog" onClick={e => e.stopPropagation()}>
-            <h3>删除连接</h3>
+            <h3><AlertIcon size={15} className="danger" />删除连接</h3>
             <p className="confirm-message">
               确定要删除连接「{deletingConnection.name || deletingConnection.host}」吗？
             </p>

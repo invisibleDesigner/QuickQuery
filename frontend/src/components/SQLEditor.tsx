@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { ColumnInfo } from '../types';
-import { getShortcutKeys, parseMonacoKeybinding } from '../utils/shortcuts';
+import { getShortcutKeys, parseMonacoKeybinding, formatDisplayKeys } from '../utils/shortcuts';
+import { PlayIcon } from './icons';
 
 interface Props {
   value: string;
@@ -11,7 +12,7 @@ interface Props {
   columns: Record<string, ColumnInfo[]>;
   onChange: (value: string) => void;
   onDatabaseChange: (database: string) => void;
-  onExecute: () => void;
+  onExecute: (sql?: string) => void;
   height: string;
   editorTheme: string;
   shortcutVersion: number;
@@ -24,6 +25,94 @@ const sqlKeywords = [
   'AND', 'OR', 'NOT', 'IN', 'LIKE', 'BETWEEN', 'IS NULL', 'IS NOT NULL',
   'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'DISTINCT', 'AS', 'DESC', 'ASC'
 ];
+
+function defineEditorThemes(monaco: any) {
+  monaco.editor.defineTheme('qq-dark', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: '', foreground: 'd7e0ee' },
+      { token: 'keyword', foreground: '6cb2ff' },
+      { token: 'predefined', foreground: 'c792ea' },
+      { token: 'string', foreground: 'a6d189' },
+      { token: 'string.sql', foreground: 'a6d189' },
+      { token: 'number', foreground: 'e5a04c' },
+      { token: 'comment', foreground: '58677d', fontStyle: 'italic' },
+      { token: 'operator', foreground: '89ddff' },
+      { token: 'identifier.quote', foreground: '7dc4e4' },
+    ],
+    colors: {
+      'editor.background': '#0a0e15',
+      'editor.foreground': '#d7e0ee',
+      'editor.lineHighlightBackground': '#121a26',
+      'editor.lineHighlightBorder': '#00000000',
+      'editorLineNumber.foreground': '#3b4a5f',
+      'editorLineNumber.activeForeground': '#8fa0b6',
+      'editorCursor.foreground': '#3ea6ff',
+      'editor.selectionBackground': '#3ea6ff30',
+      'editor.inactiveSelectionBackground': '#3ea6ff1a',
+      'editorGutter.background': '#0a0e15',
+      'editorIndentGuide.background1': '#1c2836',
+      'editorIndentGuide.activeBackground1': '#2b3b52',
+      'editorWhitespace.foreground': '#2b3b52',
+      'editorWidget.background': '#10161f',
+      'editorWidget.border': '#1f2b3c',
+      'editorSuggestWidget.background': '#10161f',
+      'editorSuggestWidget.border': '#1f2b3c',
+      'editorSuggestWidget.selectedBackground': '#16324e',
+      'editorSuggestWidget.highlightForeground': '#6cbaff',
+      'editorHoverWidget.background': '#10161f',
+      'editorHoverWidget.border': '#1f2b3c',
+      'editorBracketMatch.background': '#3ea6ff26',
+      'editorBracketMatch.border': '#3ea6ff66',
+      'scrollbarSlider.background': '#8fa0b622',
+      'scrollbarSlider.hoverBackground': '#8fa0b638',
+      'scrollbarSlider.activeBackground': '#3ea6ff55',
+    },
+  });
+  monaco.editor.defineTheme('qq-light', {
+    base: 'vs',
+    inherit: true,
+    rules: [
+      { token: '', foreground: '24344d' },
+      { token: 'keyword', foreground: '0f6fd6' },
+      { token: 'predefined', foreground: '8b46c7' },
+      { token: 'string', foreground: '2f8a46' },
+      { token: 'string.sql', foreground: '2f8a46' },
+      { token: 'number', foreground: 'c07000' },
+      { token: 'comment', foreground: '93a1b5', fontStyle: 'italic' },
+      { token: 'operator', foreground: '0b8fa3' },
+      { token: 'identifier.quote', foreground: '1a7f9e' },
+    ],
+    colors: {
+      'editor.background': '#ffffff',
+      'editor.foreground': '#24344d',
+      'editor.lineHighlightBackground': '#f1f6fc',
+      'editor.lineHighlightBorder': '#00000000',
+      'editorLineNumber.foreground': '#b6c2d1',
+      'editorLineNumber.activeForeground': '#5d6f85',
+      'editorCursor.foreground': '#0f7ae0',
+      'editor.selectionBackground': '#bcdcff99',
+      'editor.inactiveSelectionBackground': '#bcdcff55',
+      'editorGutter.background': '#ffffff',
+      'editorIndentGuide.background1': '#e6edf5',
+      'editorIndentGuide.activeBackground1': '#c2cedd',
+      'editorWidget.background': '#ffffff',
+      'editorWidget.border': '#d9e1eb',
+      'editorSuggestWidget.background': '#ffffff',
+      'editorSuggestWidget.border': '#d9e1eb',
+      'editorSuggestWidget.selectedBackground': '#d7e9fd',
+      'editorSuggestWidget.highlightForeground': '#0b68c0',
+      'editorHoverWidget.background': '#ffffff',
+      'editorHoverWidget.border': '#d9e1eb',
+      'editorBracketMatch.background': '#0f7ae01f',
+      'editorBracketMatch.border': '#0f7ae059',
+      'scrollbarSlider.background': '#5d6f8526',
+      'scrollbarSlider.hoverBackground': '#5d6f8540',
+      'scrollbarSlider.activeBackground': '#0f7ae055',
+    },
+  });
+}
 
 export default function SQLEditor({
   value,
@@ -48,6 +137,19 @@ export default function SQLEditor({
     executeRef.current = onExecute;
   }, [onExecute]);
 
+  const executeEditorContent = () => {
+    const editor = editorRef.current;
+    const model = editor?.getModel();
+    const selection = editor?.getSelection();
+    if (!model || !selection) {
+      executeRef.current();
+      return;
+    }
+
+    const selectedSql = model.getValueInRange(selection);
+    executeRef.current(selectedSql.trim() ? selectedSql : undefined);
+  };
+
   // Rebind shortcuts when shortcutVersion changes
   useEffect(() => {
     const monaco = monacoRef.current;
@@ -57,9 +159,7 @@ export default function SQLEditor({
     const parsed = parseMonacoKeybinding(getShortcutKeys('execute'));
     if (parsed) {
       const mod = (parsed.ctrlCmd ? monaco.KeyMod.CtrlCmd : 0) | (parsed.shift ? monaco.KeyMod.Shift : 0);
-      editor.addCommand(mod | parsed.keyCode, () => {
-        executeRef.current();
-      });
+      editor.addCommand(mod | parsed.keyCode, executeEditorContent);
     }
   }, [shortcutVersion]);
 
@@ -126,15 +226,9 @@ export default function SQLEditor({
     return () => providerRef.current?.dispose();
   }, [monacoReady, tables, columns]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault();
-      onExecute();
-    }
-  };
 
   return (
-    <div className="sql-editor" onKeyDown={handleKeyDown}>
+    <div className="sql-editor">
       <div className="editor-toolbar">
         <label className="database-selector">
           <span>当前库</span>
@@ -145,8 +239,8 @@ export default function SQLEditor({
             ))}
           </select>
         </label>
-        <button className="btn-primary" onClick={onExecute}>
-          ▶ 执行
+        <button className="btn-primary" onClick={executeEditorContent} title={`执行 (${formatDisplayKeys(getShortcutKeys('execute'))})`}>
+          <PlayIcon size={11} />执行
         </button>
       </div>
       <Editor
@@ -154,6 +248,7 @@ export default function SQLEditor({
         defaultLanguage="mysql"
         value={value}
         onChange={v => onChange(v || '')}
+        beforeMount={defineEditorThemes}
         onMount={(editor, monaco) => {
           monacoRef.current = monaco;
           editorRef.current = editor;
@@ -161,20 +256,32 @@ export default function SQLEditor({
           const parsed = parseMonacoKeybinding(getShortcutKeys('execute'));
           if (parsed) {
             const mod = (parsed.ctrlCmd ? monaco.KeyMod.CtrlCmd : 0) | (parsed.shift ? monaco.KeyMod.Shift : 0);
-            editor.addCommand(mod | parsed.keyCode, () => {
-              executeRef.current();
-            });
+            editor.addCommand(mod | parsed.keyCode, executeEditorContent);
           }
           setMonacoReady(true);
         }}
         theme={editorTheme}
         options={{
           minimap: { enabled: false },
-          fontSize: 14,
+          fontFamily: '"JetBrains Mono", "SF Mono", Menlo, Consolas, monospace',
+          fontSize: 13,
+          lineHeight: 21,
           lineNumbers: 'on',
+          lineNumbersMinChars: 3,
+          lineDecorationsWidth: 10,
+          folding: false,
+          glyphMargin: false,
+          renderLineHighlight: 'all',
           scrollBeyondLastLine: false,
           automaticLayout: true,
-          padding: { top: 8 },
+          padding: { top: 10, bottom: 10 },
+          cursorBlinking: 'smooth',
+          cursorSmoothCaretAnimation: 'on',
+          smoothScrolling: true,
+          scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 },
+          bracketPairColorization: { enabled: true },
+          guides: { bracketPairs: false, indentation: false },
+          fixedOverflowWidgets: true,
           suggestOnTriggerCharacters: true,
           quickSuggestions: true,
         }}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Connection } from '../types';
+import { PlugIcon, CheckIcon, AlertIcon, ClockIcon } from './icons';
 
 interface Props {
   open: boolean;
@@ -52,7 +53,7 @@ export default function ConnectionDialog({ open, connection, onSave, onClose, on
   return (
     <div className="dialog-overlay" onClick={e => e.stopPropagation()}>
       <div className="dialog" onClick={e => e.stopPropagation()}>
-        <h3>{connection ? '编辑连接' : '新建连接'}</h3>
+        <h3><PlugIcon size={15} />{connection ? '编辑连接' : '新建连接'}</h3>
         <div className="form-group">
           <label>名称</label>
           <input value={form.name} onChange={e => update('name', e.target.value)} placeholder="我的数据库" />
@@ -81,6 +82,7 @@ export default function ConnectionDialog({ open, connection, onSave, onClose, on
         </div>
         {testResult && (
           <div className={`test-result ${testResult === '连接成功' ? 'success' : 'error'}`}>
+            {testResult === '连接成功' ? <CheckIcon size={13} /> : testResult === '测试中...' ? <ClockIcon size={13} /> : <AlertIcon size={13} />}
             {testResult}
           </div>
         )}

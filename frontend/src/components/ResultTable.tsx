@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { QueryResult } from '../types';
+import { RowsIcon, ClockIcon, TerminalIcon, AlertIcon, CheckIcon } from './icons';
 
 interface Props {
   result: QueryResult | null;
@@ -12,13 +13,21 @@ export default function ResultTable({ result }: Props) {
   }, [result]);
 
   if (!result) {
-    return <div className="result-empty">执行查询后查看结果</div>;
+    return (
+      <div className="result-empty">
+        <div className="empty-illustration"><TerminalIcon size={20} /></div>
+        执行查询后查看结果
+      </div>
+    );
   }
 
   if (result.error) {
     return (
       <div className="result-error">
-        <pre>{result.error}</pre>
+        <div className="result-error-panel">
+          <div className="result-error-header"><AlertIcon size={14} />执行出错</div>
+          <pre>{result.error}</pre>
+        </div>
       </div>
     );
   }
@@ -26,10 +35,14 @@ export default function ResultTable({ result }: Props) {
   return (
     <div className="result-table">
       <div className="result-info">
-        {result.rows?.length || 0} 行 · {result.duration}ms
+        <span className="info-chip"><RowsIcon size={12} /><strong>{result.rows?.length || 0}</strong>行</span>
+        <span className="info-chip"><ClockIcon size={12} /><strong>{result.duration}</strong>ms</span>
       </div>
       {result.columns.length === 0 ? (
-        <div className="result-empty">执行成功，没有可展示的结果集</div>
+        <div className="result-empty">
+          <div className="empty-illustration"><CheckIcon size={20} /></div>
+          执行成功，没有可展示的结果集
+        </div>
       ) : (
         <div className="plain-result-wrapper">
           <table className="plain-result-table">
