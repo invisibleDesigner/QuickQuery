@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Connection } from '../types';
+
+const tableClickDelayMs = 250;
 
 interface Props {
   connections: Connection[];
@@ -13,6 +15,7 @@ interface Props {
   onAddConnection: () => void;
   onEditConnection: (conn: Connection) => void;
   onDeleteConnection: (id: string) => void;
+  onDoubleClickTable: (connId: string, db: string, table: string) => void;
 }
 
 export default function Sidebar({
@@ -27,10 +30,12 @@ export default function Sidebar({
   onAddConnection,
   onEditConnection,
   onDeleteConnection,
+  onDoubleClickTable,
 }: Props) {
   const [expandedConnections, setExpandedConnections] = useState<Set<string>>(new Set());
   const [expandedDbs, setExpandedDbs] = useState<Set<string>>(new Set());
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
+  const tableClickTimers = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (!activeConnectionId) return;
@@ -41,6 +46,12 @@ export default function Sidebar({
       return next;
     });
   }, [activeConnectionId]);
+
+  useEffect(() => {
+    return () => {
+      tableClickTimers.current.forEach(timer => clearTimeout(timer));
+    };
+  }, []);
 
   const toggleConnection = (connId: string) => {
     setExpandedConnections(prev => {
@@ -83,6 +94,24 @@ export default function Sidebar({
     });
   };
 
+  const handleTableClick = (connId: string, db: string, table: string) => {
+    const key = `${connId}/${db}/${table}`;
+    clearTimeout(tableClickTimers.current.get(key));
+
+    const timer = setTimeout(() => {
+      tableClickTimers.current.delete(key);
+      toggleTable(connId, db, table);
+    }, tableClickDelayMs);
+    tableClickTimers.current.set(key, timer);
+  };
+
+  const handleTableDoubleClick = (connId: string, db: string, table: string) => {
+    const key = `${connId}/${db}/${table}`;
+    clearTimeout(tableClickTimers.current.get(key));
+    tableClickTimers.current.delete(key);
+    onDoubleClickTable(connId, db, table);
+  };
+
   const getTables = (connId: string, db: string) => {
     return tables[`${connId}/${db}`] || [];
   };
@@ -119,7 +148,11 @@ export default function Sidebar({
                 </div>
                 {expandedDbs.has(`${conn.id}/${db}`) && getTables(conn.id, db).map(table => (
                   <div key={table} className="tree-item nested">
-                    <div className="tree-node" onClick={() => toggleTable(conn.id, db, table)}>
+                    <div
+                      className="tree-node"
+                      onClick={() => handleTableClick(conn.id, db, table)}
+                      onDoubleClick={() => handleTableDoubleClick(conn.id, db, table)}
+                    >
                       <span className="tree-icon">{expandedTables.has(`${conn.id}/${db}/${table}`) ? '▾' : '▸'}</span>
                       <span className="tree-label">{table}</span>
                     </div>

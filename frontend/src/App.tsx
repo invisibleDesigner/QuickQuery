@@ -95,6 +95,7 @@ function App() {
   const [shortcutVersion, setShortcutVersion] = useState(0);
   const [tabWidths, setTabWidths] = useState<Record<string, number>>({});
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [workspaceReadyConnectionId, setWorkspaceReadyConnectionId] = useState<string | null>(null);
 
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
 
@@ -128,6 +129,7 @@ function App() {
 
   // Load workspace when connection changes
   useEffect(() => {
+    setWorkspaceReadyConnectionId(null);
     if (!activeConnectionId) {
       const tab = createTab();
       setTabs([tab]);
@@ -145,6 +147,7 @@ function App() {
       setTabs([tab]);
       setActiveTabId(tab.id);
     }
+    setWorkspaceReadyConnectionId(activeConnectionId);
     GetDatabases(activeConnectionId).then(dbs => {
       const list = dbs || [];
       setDatabases(prev => ({ ...prev, [activeConnectionId]: list }));
@@ -161,9 +164,9 @@ function App() {
 
   // Persist workspace
   useEffect(() => {
-    if (!activeConnectionId) return;
+    if (!activeConnectionId || workspaceReadyConnectionId !== activeConnectionId) return;
     saveWorkspace(activeConnectionId, { tabs, activeTabId });
-  }, [activeConnectionId, tabs, activeTabId]);
+  }, [activeConnectionId, tabs, activeTabId, workspaceReadyConnectionId]);
 
   const handleAddConnection = () => {
     setEditingConnection(null);
@@ -279,8 +282,14 @@ function App() {
     }
     const tab = tabs.find(t => t.id === activeTabId);
     if (!tab) return;
-    const res = await ExecuteQuery(activeConnectionId, tab.database, tab.sql);
-    updateTab(activeTabId, { result: res });
+    try {
+      const result = await ExecuteQuery(activeConnectionId, tab.database, tab.sql);
+      updateTab(activeTabId, { result });
+    } catch (error) {
+      updateTab(activeTabId, {
+        result: { columns: [], rows: [], error: String(error), duration: 0 },
+      });
+    }
   }, [activeConnectionId, activeTabId, tabs, updateTab]);
 
   const handleExpandDatabase = async (connId: string, db: string) => {
@@ -299,6 +308,29 @@ function App() {
     const tab = createTab(db);
     setTabs(prev => [...prev, tab]);
     setActiveTabId(tab.id);
+  };
+
+  const handleDoubleClickTable = async (connId: string, db: string, table: string) => {
+    const escapedTable = table.replace(/`/g, '``');
+    const sql = `SELECT * FROM \`${escapedTable}\` LIMIT 50`;
+    const tab: QueryTab = {
+      id: nextTabId(),
+      name: table,
+      sql,
+      database: db,
+      result: null,
+    };
+    setTabs(prev => [...prev, tab]);
+    setActiveTabId(tab.id);
+
+    try {
+      const result = await ExecuteQuery(connId, db, sql);
+      updateTab(tab.id, { result });
+    } catch (error) {
+      updateTab(tab.id, {
+        result: { columns: [], rows: [], error: String(error), duration: 0 },
+      });
+    }
   };
 
   const handleCloseTab = (tabId: string, e: React.MouseEvent) => {
@@ -360,6 +392,7 @@ function App() {
         onAddConnection={handleAddConnection}
         onEditConnection={handleEditConnection}
         onDeleteConnection={handleDeleteConnection}
+        onDoubleClickTable={handleDoubleClickTable}
         />
       </div>
       <div className="vertical-resizer" onMouseDown={startSidebarResize} />

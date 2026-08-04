@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"quickquery/internal/config"
 	"strconv"
 	"testing"
 
@@ -40,7 +41,7 @@ func loadTestMySQLConfig(t *testing.T) testMySQLConfig {
 
 func TestRawTCP(t *testing.T) {
 	cfg := loadTestMySQLConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.host, cfg.port)
+	addr := net.JoinHostPort(cfg.host, strconv.Itoa(cfg.port))
 	t.Logf("Dialing TCP %s ...", addr)
 	conn, err := net.DialTimeout("tcp", addr, 5e9)
 	if err != nil {
@@ -61,6 +62,21 @@ func TestRawTCP(t *testing.T) {
 	}
 	if n >= 5 {
 		t.Logf("Protocol version: %d", buf[4])
+	}
+}
+
+func TestDSNIncludesShanghaiLocation(t *testing.T) {
+	conn := config.Connection{
+		Host:     "db.example.com",
+		Port:     3306,
+		User:     "alice",
+		Password: "secret",
+		Database: "analytics",
+	}
+
+	const want = "alice:secret@tcp(db.example.com:3306)/analytics?parseTime=true&loc=Asia%2FShanghai&charset=utf8mb4&timeout=5s&readTimeout=10s&writeTimeout=10s"
+	if got := dsn(conn); got != want {
+		t.Errorf("dsn() = %q, want %q", got, want)
 	}
 }
 

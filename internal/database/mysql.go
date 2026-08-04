@@ -27,7 +27,7 @@ type ColumnInfo struct {
 }
 
 func dsn(conn config.Connection) string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&charset=utf8mb4&timeout=5s&readTimeout=10s&writeTimeout=10s",
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&loc=Asia%%2FShanghai&charset=utf8mb4&timeout=5s&readTimeout=10s&writeTimeout=10s",
 		conn.User, conn.Password, conn.Host, conn.Port, conn.Database)
 }
 
